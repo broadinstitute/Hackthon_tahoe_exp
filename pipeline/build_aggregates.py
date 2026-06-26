@@ -88,7 +88,7 @@ SAMPLE_DATA_DIR = Path(__file__).parent / "sample_data"
 GENE_SETS_DIR = Path(__file__).parent / "gene_sets"
 N_SHARDS_TOTAL = 3388
 SPECIAL_TOKEN_MIN = 3      # real genes have token_id >= 3; 1 is a CLS sentinel
-NORM_TARGET = 10_000.0     # counts-per-10k before log1p
+NORM_TARGET = 10000.0      # counts-per-10k before log1p
 N_DECILES = 11             # q0, q10, ..., q100
 DECILE_PROBS = np.linspace(0.0, 1.0, N_DECILES)
 # Histogram (parallel engine) covers log1p(counts-per-10k). The theoretical max
@@ -99,7 +99,7 @@ DEFAULT_BINS = 64
 # One Hive partition per gene symbol; the source has ~62k genes, far above
 # pyarrow's default max_partitions of 1024. A single batch (e.g. the sample,
 # one shard, no gene-batching) can touch thousands of genes at once.
-MAX_PARTITIONS = 100_000
+MAX_PARTITIONS = 100000
 
 
 def log(msg: str) -> None:
@@ -648,7 +648,7 @@ def run_single(con, shards, args, grid_probs, grid_list, agg_dir):
         label = "all tokens" if lo is None else f"tokens [{lo}, {hi})"
         log(f"pass {bi + 1}/{args.gene_batches}: aggregating {label} ...")
         sql, params = aggregate_query(shards, lo, hi, grid_list)
-        reader = con.execute(sql, params).fetch_record_batch(rows_per_batch=200_000)
+        reader = con.execute(sql, params).fetch_record_batch(rows_per_batch=200000)
         wrote_any = False
         for rb in reader:
             df = rb.to_pandas()
@@ -745,7 +745,7 @@ def run_parallel(con, shards, args, agg_dir, out_dir, tokens=None):
     t_red0 = time.time()
     hist_glob = f"{partials_dir}/hist-*.parquet"
     reader = con.execute(reduce_query(hist_glob), [hist_glob]).fetch_record_batch(
-        rows_per_batch=200_000
+        rows_per_batch=200000
     )
     seen_symbols: set[str] = set()
     total_rows = 0
