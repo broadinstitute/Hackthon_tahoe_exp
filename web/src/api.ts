@@ -32,10 +32,14 @@ export interface GeneResponse {
 
 export async function searchGenes(q: string): Promise<SearchMatch[]> {
   if (!q.trim()) return [];
-  const r = await fetch(`${BASE}/api/search?q=${encodeURIComponent(q)}&limit=10`);
-  if (!r.ok) return [];
-  const data = await r.json();
-  return data.matches as SearchMatch[];
+  try {
+    const r = await fetch(`${BASE}/api/search?q=${encodeURIComponent(q)}&limit=10`);
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data.matches as SearchMatch[];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchGene(symbol: string): Promise<GeneResponse> {
