@@ -65,6 +65,23 @@ uvicorn api.main:app --reload --port 8000
 
 Then open the interactive API docs at <http://localhost:8000/docs>.
 
+### A bigger demo store: the curated cancer panel
+
+For a richer store than the tiny sample, build the curated ~122-gene cancer
+panel ([`pipeline/gene_sets/cancer.txt`](pipeline/gene_sets/cancer.txt)) over a
+slice of the real shards. This uses the cheap targeted ("no-unnest") path, so
+even 256 shards (~7M cells) finishes in ~10 min on an 8-core box:
+
+```bash
+# All 122 cancer genes across 256 real shards (-> pipeline/out/)
+python pipeline/build_aggregates.py --gene-set cancer --shards 256 --workers 8
+```
+
+`--gene-set <name>` loads `pipeline/gene_sets/<name>.txt`; `--genes-file PATH`
+takes any symbol list, and `--genes TP53,EGFR,...` an inline list. Add `--full`
+to run all 3,388 shards (~2 h for the panel). For **all ~62k genes**, drop the
+gene restriction entirely — that engages the heavier `unnest` map-reduce.
+
 For the full dataset, `pipeline/build_aggregates.py` provides a parallel
 map-reduce engine (`--full`, `--workers`); see its module docstring and
 [`pipeline/`](pipeline/) for details. Per-component docs live in

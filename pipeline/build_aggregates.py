@@ -85,6 +85,7 @@ import pyarrow.dataset as ds
 
 DEFAULT_DATA_DIR = "/home/jovyan/organization/raw/public-datasets/tahoe_100m"
 SAMPLE_DATA_DIR = Path(__file__).parent / "sample_data"
+GENE_SETS_DIR = Path(__file__).parent / "gene_sets"
 N_SHARDS_TOTAL = 3388
 SPECIAL_TOKEN_MIN = 3      # real genes have token_id >= 3; 1 is a CLS sentinel
 NORM_TARGET = 10_000.0     # counts-per-10k before log1p
@@ -832,6 +833,26 @@ def log_full_estimate(n_shards, n_cells, t_map, t_reduce, t_write, total_rows,
     log("-" * 70)
 
 
+def load_gene_symbols(path: Path) -> str:
+    """Read gene symbols from a panel file -> comma-joined string for --genes.
+
+    The file is whitespace/comma/newline separated; '#' starts a line comment.
+    Duplicates are dropped, first-seen order preserved.
+    """
+    if not path.exists():
+        avail = sorted(p.stem for p in GENE_SETS_DIR.glob("*.txt"))
+        sys.exit(f"gene-set/genes-file not found: {path}"
+                 + (f" (available gene-sets: {', '.join(avail)})" if avail else ""))
+    seen: dict[str, None] = {}
+    for line in path.read_text().splitlines():
+        line = line.split("#", 1)[0]
+        for sym in line.replace(",", " ").split():
+            seen.setdefault(sym, None)
+    if not seen:
+        sys.exit(f"no gene symbols found in {path}")
+    return ",".join(seen)
+
+
 def resolve_gene_tokens(con: duckdb.DuckDBPyConnection, genes_arg: str) -> list[int]:
     """Map comma-separated gene symbols to their token_ids via gene_map.
 
@@ -878,6 +899,15 @@ def main() -> None:
                          "'TP53,EGFR,KRAS,BRCA1'. Uses a targeted no-unnest scan "
                          "(parallel engine) that is cheap enough to run over all "
                          "shards (combine with --full) for a few-gene demo build.")
+    ap.add_argument("--gene-set", default=None,
+                    help="named gene panel to restrict to, loaded from "
+                         f"{GENE_SETS_DIR}/<name>.txt (e.g. 'cancer' for the "
+                         "curated ~122-gene cancer panel). Same targeted path as "
+                         "--genes. Mutually exclusive with --genes/--genes-file.")
+    ap.add_argument("--genes-file", default=None, type=Path,
+                    help="path to a file of gene symbols (whitespace/comma/newline "
+                         "separated, '#' comments). Same targeted path as --genes. "
+                         "Mutually exclusive with --genes/--gene-set.")
     ap.add_argument("--shards", type=int, default=4,
                     help="number of expression shards to process (default: 4, a "
                          "Day-1 sample). Ignored when --full is set.")
@@ -921,6 +951,17 @@ def main() -> None:
                     help="DuckDB memory limit for the single engine / parallel "
                          "reduce, e.g. '16GB' (enables disk spill)")
     args = ap.parse_args()
+
+    # Resolve the gene-restriction options into args.genes (a comma string) so
+    # all downstream logic -- engine forcing, manifest, resolve_gene_tokens --
+    # stays unchanged. At most one of --genes/--gene-set/--genes-file.
+    gene_opts = [args.genes, args.gene_set, args.genes_file]
+    if sum(o is not None for o in gene_opts) > 1:
+        ap.error("--genes, --gene-set and --genes-file are mutually exclusive")
+    if args.gene_set:
+        args.genes = load_gene_symbols(GENE_SETS_DIR / f"{args.gene_set}.txt")
+    elif args.genes_file:
+        args.genes = load_gene_symbols(args.genes_file)
 
     if args.sample and args.data_dir is not None:
         ap.error("--sample and --data-dir are mutually exclusive")
