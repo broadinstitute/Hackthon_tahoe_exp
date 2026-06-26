@@ -53,11 +53,16 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 
 DEFAULT_DATA_DIR = "/home/jovyan/organization/raw/public-datasets/tahoe_100m"
+SAMPLE_DATA_DIR = Path(__file__).parent / "sample_data"
 N_SHARDS_TOTAL = 3388
 SPECIAL_TOKEN_MIN = 3      # real genes have token_id >= 3; 1 is a CLS sentinel
 NORM_TARGET = 10_000.0     # counts-per-10k before log1p
 N_DECILES = 11             # q0, q10, ..., q100
 DECILE_PROBS = np.linspace(0.0, 1.0, N_DECILES)
+# One Hive partition per gene symbol; the source has ~62k genes, far above
+# pyarrow's default max_partitions of 1024. A single batch (e.g. the sample,
+# one shard, no gene-batching) can touch thousands of genes at once.
+MAX_PARTITIONS = 100_000
 
 
 def log(msg: str) -> None:
@@ -289,8 +294,13 @@ def token_buckets(con: duckdb.DuckDBPyConnection, n_buckets: int):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--data-dir", default=DEFAULT_DATA_DIR, type=Path,
-                    help="Tahoe-100M dataset root (default: %(default)s)")
+    ap.add_argument("--data-dir", default=None, type=Path,
+                    help=f"Tahoe-100M dataset root (default: {DEFAULT_DATA_DIR})")
+    ap.add_argument("--sample", action="store_true",
+                    help=f"process the tiny bundled sample at {SAMPLE_DATA_DIR} "
+                         "(all of its shards); a shortcut for "
+                         "'--data-dir pipeline/sample_data --full'. Use to produce "
+                         "example aggregates for API development.")
     ap.add_argument("--out", default=Path(__file__).parent / "out", type=Path,
                     help="output directory (default: pipeline/out)")
     ap.add_argument("--shards", type=int, default=4,
@@ -309,18 +319,31 @@ def main() -> None:
                     help="DuckDB memory limit, e.g. '16GB' (enables disk spill)")
     args = ap.parse_args()
 
-    data_dir = args.data_dir.resolve()
+    if args.sample and args.data_dir is not None:
+        ap.error("--sample and --data-dir are mutually exclusive")
+    if args.sample:
+        data_dir = SAMPLE_DATA_DIR.resolve()
+        full = True  # the sample is small; always use all of its shards
+    else:
+        data_dir = (args.data_dir or Path(DEFAULT_DATA_DIR)).resolve()
+        full = args.full
     out_dir = args.out.resolve()
     agg_dir = out_dir / "aggregates"
 
-    shards = select_shards(data_dir, args.shards, args.full)
+    shards = select_shards(data_dir, args.shards, full)
     grid_probs = np.linspace(0.0, 1.0, args.grid_points)
     grid_list = grid_probs.tolist()
 
     log(f"data_dir={data_dir}")
     log(f"out={out_dir}")
+    if args.sample:
+        mode = "bundled sample"
+    elif full:
+        mode = "FULL"
+    else:
+        mode = "sample"
     log(f"processing {len(shards)} / {N_SHARDS_TOTAL} shards "
-        f"({'FULL' if args.full else 'sample'}); gene_batches={args.gene_batches}")
+        f"({mode}); gene_batches={args.gene_batches}")
 
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -357,14 +380,15 @@ def main() -> None:
                 partitioning=["gene_symbol"], partitioning_flavor="hive",
                 existing_data_behavior="overwrite_or_ignore",
                 basename_template=f"part-b{bi}-{{i}}.parquet",
+                max_partitions=MAX_PARTITIONS,
             )
             wrote_any = True
         if not wrote_any:
             log(f"  (no expressed rows in {label})")
 
     write_gene_index(con, out_dir, seen_symbols)
-    write_manifest(out_dir, data_dir, shards, args, total_rows, len(seen_symbols),
-                   time.time() - t0)
+    write_manifest(out_dir, data_dir, shards, args, full, total_rows,
+                   len(seen_symbols), time.time() - t0)
     con.close()
     log(f"DONE: {total_rows} group rows across {len(seen_symbols)} genes "
         f"in {time.time() - t0:.1f}s -> {agg_dir}")
@@ -385,13 +409,14 @@ def write_gene_index(con: duckdb.DuckDBPyConnection, out_dir: Path,
     log(f"gene_index: {len(gm)} genes -> {out_dir / 'gene_index.parquet'}")
 
 
-def write_manifest(out_dir: Path, data_dir: Path, shards: list[str], args,
+def write_manifest(out_dir: Path, data_dir: Path, shards: list[str], args, full: bool,
                    total_rows: int, n_genes: int, elapsed: float) -> None:
     manifest = {
         "data_dir": str(data_dir),
+        "sample": bool(args.sample),
         "n_shards_processed": len(shards),
         "n_shards_total": N_SHARDS_TOTAL,
-        "full": bool(args.full),
+        "full": bool(full),
         "normalization": "log1p(counts_per_10k)",
         "perturbation": "drug@concentration+unit",
         "special_token_min": SPECIAL_TOKEN_MIN,
