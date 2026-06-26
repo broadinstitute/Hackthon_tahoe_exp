@@ -1,0 +1,6 @@
+fastapi>=0.109
+uvicorn[standard]>=0.23
+duckdb>=1.0
+# httpx<0.28: starlette's TestClient relies on the `app=` shortcut removed in 0.28.
+httpx>=0.24,<0.28
+pytest>=7

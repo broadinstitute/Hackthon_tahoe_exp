@@ -1,0 +1,10 @@
+# Built precompute store (large, regenerated from raw data) — not committed.
+pipeline/out/
+*.tar.gz
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
