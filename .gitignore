@@ -1,6 +1,13 @@
-# Built precompute store (large, regenerated from raw data) — not committed.
+# Built precompute stores (large, regenerated from raw data) — not committed.
 pipeline/out/
+pipeline/out_demo/
 *.tar.gz
+
+# Static demo JSON bundles generated from out_demo (~13 MB each)
+web/public/KRAS.json
+web/public/TP53.json
+web/public/EGFR.json
+web/public/BRCA1.json
 
 # Python
 __pycache__/

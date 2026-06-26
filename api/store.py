@@ -26,26 +26,44 @@ from typing import Any
 
 import duckdb
 
-DEFAULT_STORE = Path(__file__).resolve().parent.parent / "pipeline" / "out"
+_PIPELINE = Path(__file__).resolve().parent.parent / "pipeline"
+DEFAULT_STORE = _PIPELINE / "out"
+DEMO_STORE   = _PIPELINE / "out_demo"
 
 
 class GeneNotFound(Exception):
-    """Raised when a gene symbol has no partition in the store."""
+    """Raised when a gene symbol has no partition in any store."""
 
 
 class Store:
-    def __init__(self, root: str | os.PathLike | None = None) -> None:
-        self.root = Path(root or os.environ.get("STORE_DIR", DEFAULT_STORE)).resolve()
-        self.agg_dir = self.root / "aggregates"
-        self.index_path = self.root / "gene_index.parquet"
-        if not self.index_path.exists():
+    """Multi-root store: roots are checked in order; first hit wins per gene.
+
+    Typical setup: [out_demo, out]  — the demo store provides richer data for
+    4 curated genes; the full out store covers the remaining ~35k genes.
+    """
+
+    def __init__(self, roots: list[str | os.PathLike] | None = None) -> None:
+        if roots is None:
+            # Env override still works for the primary store; demo store is
+            # auto-discovered next to it when present.
+            primary = Path(os.environ.get("STORE_DIR", DEFAULT_STORE)).resolve()
+            candidate_demo = primary.parent / "out_demo"
+            roots = ([candidate_demo, primary] if candidate_demo.is_dir()
+                     else [primary])
+
+        self.roots = [Path(r).resolve() for r in roots]
+
+        # Validate at least one root has a gene index.
+        valid = [r for r in self.roots if (r / "gene_index.parquet").exists()]
+        if not valid:
             raise FileNotFoundError(
-                f"gene_index.parquet not found under {self.root}. "
-                "Point STORE_DIR at a built pipeline output, or run "
-                "`python pipeline/build_aggregates.py --sample`."
+                f"No gene_index.parquet found in any of {self.roots}. "
+                "Run `python pipeline/build_aggregates.py --sample`."
             )
-        # One connection, reused read-only across requests. DuckDB connections
-        # are safe to share for concurrent reads.
+
+        # Expose the primary (last-fallback) root for the health endpoint.
+        self.root = self.roots[-1]
+
         self.con = duckdb.connect(database=":memory:")
         self.manifest = self._load_manifest()
         self._symbol_to_dir: dict[str, Path] = {}
@@ -60,24 +78,37 @@ class Store:
         return {}
 
     def _load_index(self) -> None:
-        """Load the search index and map every gene symbol to its partition dir.
+        """Merge indexes from all roots; first root wins for duplicates.
 
         Partition directory names are Hive-encoded (`gene_symbol=<url-quoted>`);
-        we url-decode them so symbols with special characters resolve to the
-        right directory without guessing the encoding.
+        we url-decode them so symbols with special characters resolve correctly.
         """
-        rows = self.con.execute(
-            "SELECT symbol, name FROM read_parquet(?) ORDER BY symbol",
-            [str(self.index_path)],
-        ).fetchall()
-        self._index = [{"symbol": s, "name": n} for s, n in rows]
+        seen_symbols: set[str] = set()
 
-        if self.agg_dir.exists():
-            prefix = "gene_symbol="
-            for entry in self.agg_dir.iterdir():
-                if entry.is_dir() and entry.name.startswith(prefix):
-                    symbol = urllib.parse.unquote(entry.name[len(prefix):])
-                    self._symbol_to_dir[symbol] = entry
+        for root in self.roots:
+            index_path = root / "gene_index.parquet"
+            if not index_path.exists():
+                continue
+            rows = self.con.execute(
+                "SELECT symbol, name FROM read_parquet(?) ORDER BY symbol",
+                [str(index_path)],
+            ).fetchall()
+            for sym, name in rows:
+                if sym not in seen_symbols:
+                    self._index.append({"symbol": sym, "name": name})
+                    seen_symbols.add(sym)
+
+            agg_dir = root / "aggregates"
+            if agg_dir.exists():
+                prefix = "gene_symbol="
+                for entry in agg_dir.iterdir():
+                    if entry.is_dir() and entry.name.startswith(prefix):
+                        symbol = urllib.parse.unquote(entry.name[len(prefix):])
+                        # First root to provide a gene's partition wins.
+                        if symbol not in self._symbol_to_dir:
+                            self._symbol_to_dir[symbol] = entry
+
+        self._index.sort(key=lambda r: r["symbol"])
 
     # -- queries ------------------------------------------------------------ #
     def search(self, q: str, limit: int = 20) -> list[dict[str, str]]:
@@ -137,6 +168,7 @@ class Store:
         violin = [
             {
                 "cell_line": r["cell_line"],
+                "organ": r["organ"],
                 "perturbation": r["perturbation"],
                 "n": r["n_cells"],
                 "deciles": r["deciles"],
@@ -147,6 +179,11 @@ class Store:
         ]
 
         ensembl_id = records[0]["ensembl_id"] if records else None
+        # organ lookup keyed by cell_line name, for the frontend to annotate axes
+        cl_organ: dict[str, str | None] = {}
+        for r in records:
+            if r["cell_line"] not in cl_organ:
+                cl_organ[r["cell_line"]] = r["organ"]
         return {
             "gene": symbol,
             "ensembl_id": ensembl_id,
@@ -155,6 +192,7 @@ class Store:
                 "cell_lines": cell_lines,
                 "perturbations": perturbations,
                 "mean": mean_matrix,
+                "cell_line_organs": cl_organ,
             },
             "violin": violin,
         }

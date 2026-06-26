@@ -48,10 +48,10 @@ def _gene_cached(symbol: str) -> dict:
 
 @app.get("/api/health")
 def health() -> dict:
-    """Liveness + which store/build is being served."""
+    """Liveness + which stores are being served."""
     return {
         "status": "ok",
-        "store": str(store.root),
+        "stores": [str(r) for r in store.roots],
         "n_genes_indexed": len(store._index),
         "manifest": store.manifest,
     }

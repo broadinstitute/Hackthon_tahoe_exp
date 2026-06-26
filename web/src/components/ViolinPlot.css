@@ -1,0 +1,253 @@
+.violin-wrap {
+  width: 100%;
+}
+
+/* ── Controls row: toggle + tissue checkbox side by side ── */
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.controls-row .view-toggle {
+  margin-bottom: 0;
+}
+
+.tissue-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .85rem;
+  color: #455a64;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tissue-toggle input[type="checkbox"] {
+  accent-color: #1565c0;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* ── View toggle ── */
+.view-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border: 1.5px solid #b0bec5;
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.vt-btn {
+  padding: 6px 16px;
+  font-size: .85rem;
+  font-weight: 500;
+  border: none;
+  background: #fff;
+  color: #455a64;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.vt-btn:not(:last-child) {
+  border-right: 1.5px solid #b0bec5;
+}
+
+.vt-btn:hover {
+  background: #e3f0fb;
+  color: #1565c0;
+}
+
+.vt-btn.active {
+  background: #1565c0;
+  color: #fff;
+}
+
+/* ── Shared label ── */
+.cl-label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #607d8b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-right: 4px;
+  white-space: nowrap;
+  align-self: center;
+}
+
+/* ── Cell line tabs (by-perturbation view) ── */
+.cl-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.cl-tab {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #b0bec5;
+  background: #fff;
+  color: #455a64;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.cl-tab:hover {
+  border-color: #1565c0;
+  color: #1565c0;
+}
+
+.cl-tab.active {
+  background: #1565c0;
+  border-color: #1565c0;
+  color: #fff;
+}
+
+.cl-more {
+  font-size: .82rem;
+  color: #1565c0;
+  background: none;
+  border: 1.5px dashed #90caf9;
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.cl-more:hover {
+  background: #e3f0fb;
+  border-color: #1565c0;
+}
+
+/* ── Condition selector (by-cell-line view) ── */
+.condition-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* Preset chips */
+.preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preset-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #b0bec5;
+  background: #fff;
+  color: #455a64;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preset-chip:hover {
+  border-color: #1565c0;
+  color: #1565c0;
+}
+
+.preset-chip.active {
+  background: #1565c0;
+  border-color: #1565c0;
+  color: #fff;
+}
+
+/* divider between presets and search */
+.preset-chips + .pert-dropdown::before {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 1px;
+  background: #cfd8dc;
+  margin-right: 4px;
+}
+
+.pert-dropdown {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+}
+
+.pert-search {
+  width: 100%;
+  padding: 6px 12px;
+  font-size: .9rem;
+  border: 1.5px solid #b0bec5;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  color: #212121;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+
+.pert-search:focus {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 3px rgba(21,101,192,.1);
+}
+
+.pert-list {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0; right: 0;
+  background: #fff;
+  border: 1px solid #b0bec5;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  list-style: none;
+  margin: 0; padding: 4px 0;
+  z-index: 200;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.pert-list li {
+  padding: 7px 14px;
+  font-size: .88rem;
+  cursor: pointer;
+  color: #212121;
+}
+
+.pert-list li:hover,
+.pert-list li.active {
+  background: #e3f0fb;
+  color: #1565c0;
+}
+
+.pert-overflow {
+  color: #90a4ae !important;
+  font-size: .82rem !important;
+  cursor: default !important;
+  background: none !important;
+  font-style: italic;
+}
+
+
+.pert-badge {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 600;
+  background: #ffebee;
+  color: #e53935;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
