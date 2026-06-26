@@ -1,0 +1,79 @@
+.search-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 2px solid #c8d6e0;
+  border-radius: 8px;
+  padding: 0 14px;
+  transition: border-color 0.15s;
+}
+
+.search-box:focus-within {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 3px rgba(21,101,192,.12);
+}
+
+.search-icon {
+  font-size: 1.3rem;
+  color: #90a4ae;
+  margin-right: 8px;
+  user-select: none;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  padding: 12px 0;
+  background: transparent;
+  color: #212121;
+}
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: #fff;
+  border: 1px solid #c8d6e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  list-style: none;
+  margin: 0; padding: 4px 0;
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.suggestions li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  font-size: .95rem;
+}
+
+.suggestions li:hover,
+.suggestions li.active {
+  background: #e3f0fb;
+}
+
+.suggestions li strong {
+  color: #1565c0;
+  min-width: 80px;
+}
+
+.gene-name {
+  color: #607d8b;
+  font-size: .85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
