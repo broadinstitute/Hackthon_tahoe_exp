@@ -1,0 +1,48 @@
+# Curated cancer gene panel (~122 genes) for the Gene Explorer demo build.
+#
+# Oncogenes, tumor suppressors, and common drug targets — chosen so the
+# precomputed store covers genes a Tahoe-100M (drug-perturbation) user is most
+# likely to search. Used by:
+#     python pipeline/build_aggregates.py --gene-set cancer --shards 256
+#
+# Format: whitespace/comma/newline separated gene symbols; '#' starts a comment.
+# Symbols are resolved against gene_metadata at build time; unknown symbols are
+# reported and skipped (see resolve_gene_tokens in build_aggregates.py).
+
+# Receptor tyrosine kinases / growth-factor signaling
+EGFR ERBB2 ERBB3 ERBB4 MET ALK ROS1 RET KIT PDGFRA PDGFRB
+FGFR1 FGFR2 FGFR3 FGFR4 FLT1 FLT3 FLT4 KDR VEGFA VEGFB
+
+# RAS / MAPK
+KRAS NRAS HRAS BRAF RAF1 MAP2K1 MAP2K2
+
+# PI3K / AKT / mTOR
+PIK3CA PIK3CB PIK3R1 AKT1 AKT2 AKT3 MTOR PTEN STK11 TSC1 TSC2
+
+# Cell cycle / CDK
+CDK4 CDK6 CCND1 CCNE1 CDKN2A CDKN1A CDKN1B RB1 MDM2 MDM4
+
+# DNA damage / repair
+TP53 ATM ATR CHEK1 CHEK2 BRCA1 BRCA2 PALB2 RAD51
+
+# Tumor suppressors / other drivers
+APC VHL NF1 NF2 CTNNB1 GSK3B SMAD4 TGFBR2
+
+# Kinase fusions / JAK-STAT
+ABL1 BCR JAK1 JAK2 JAK3 STAT3
+
+# Apoptosis
+BCL2 BCL2L1 MCL1 BAX BAK1 CASP3 CASP8 FAS TNF
+
+# Metabolism / IDH-SDH-FH
+IDH1 IDH2 SDHB FH KEAP1 NFE2L2
+
+# Chromatin / epigenetic
+EZH2 DNMT3A TET2 KMT2A KMT2D CREBBP EP300 ARID1A SMARCA4 SMARCB1 PBRM1 SETD2
+
+# Hedgehog / Notch / Wnt
+SMO PTCH1 GLI1 NOTCH1 NOTCH2 HES1 WNT1
+
+# Nuclear receptors / proliferation / EMT / stemness
+AR ESR1 PGR MKI67 EPCAM VIM CDH1 SNAI1 ZEB1 TWIST1
+MYC MYCN SOX2 POU5F1 NANOG KLF4
