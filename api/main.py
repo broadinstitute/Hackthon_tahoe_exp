@@ -16,9 +16,11 @@ Interactive docs at /docs once running.
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .store import GeneNotFound, Store
 
@@ -73,3 +75,9 @@ def gene(symbol: str) -> dict:
         return _gene_cached(symbol)
     except GeneNotFound:
         raise HTTPException(status_code=404, detail=f"gene '{symbol}' not found")
+
+
+# Serve the built React frontend. Must come last so /api/* routes take precedence.
+_dist = Path(__file__).parent.parent / "web" / "dist"
+if _dist.exists():
+    app.mount("/", StaticFiles(directory=_dist, html=True), name="frontend")
