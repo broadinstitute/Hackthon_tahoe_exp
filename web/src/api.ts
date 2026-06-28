@@ -54,7 +54,7 @@ export const DEMO_GENES = ["KRAS", "TP53", "EGFR", "BRCA1"] as const;
 export type DemoGene = (typeof DEMO_GENES)[number];
 
 export async function fetchDemoGene(gene: DemoGene): Promise<GeneResponse> {
-  const r = await fetch(`/${gene}.json`);
+  const r = await fetch(`${import.meta.env.BASE_URL}${gene}.json`);
   if (!r.ok) throw new Error(`Demo data for ${gene} not found`);
   return r.json();
 }

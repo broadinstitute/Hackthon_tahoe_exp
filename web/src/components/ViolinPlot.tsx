@@ -142,7 +142,7 @@ export default function ViolinPlot({ violin, gene }: Props) {
     [perturbations, searchText]
   );
 
-  const { traces, bw } = useMemo(() => {
+  const { traces } = useMemo(() => {
     // ── By perturbation ──
     if (view === "by-perturbation") {
       const cellEntries = violin.filter(v => v.cell_line === selectedCL);
@@ -243,7 +243,7 @@ export default function ViolinPlot({ violin, gene }: Props) {
       margin: { l: 60, r: 20, t: 70, b: 160 },
       plot_bgcolor: "#fafcff",
       paper_bgcolor: "#fff",
-    }, { responsive: true, displayModeBar: false });
+    } as Partial<Plotly.Layout>, { responsive: true, displayModeBar: false });
   }, [traces, gene, xLabel, subtitle]);
 
   function selectPert(p: string) {
