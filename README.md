@@ -1,5 +1,8 @@
 # Tahoe-100M Gene Explorer
 
+**Live demo:** https://broadinstitute.github.io/Hackthon_tahoe_exp/
+(KRAS, TP53, EGFR, and BRCA1 load from bundled demo data — no API required)
+
 A GTEx-style search & visualization tool for the **Tahoe-100M** single-cell
 dataset. Search for a gene and see its expression rendered as a **violin plot**
 and a **cell line × perturbation heatmap** — the equivalent of a single
